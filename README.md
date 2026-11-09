@@ -132,6 +132,42 @@ npm run build
 
 4. `build` 디렉토리의 내용을 호스팅 플랫폼에 배포
 
+## 서버 운영
+
+정적 사이트(Vite 빌드 결과물)이므로 별도의 백엔드 없이 nginx 로 서빙합니다.
+환경변수(`VITE_*`)는 **빌드 시점**에 번들에 포함되므로, 값이 바뀌면 다시 빌드해야 합니다.
+API 키 등 비밀값은 저장소에 커밋하지 말고 `.env`(gitignore 대상) 또는 셸 환경변수로 주입하세요.
+
+### Docker Compose (권장)
+
+```bash
+cp .env.example .env   # VITE_* 값 입력 (선택: PORT, BASE_PATH)
+docker compose up -d --build
+curl http://localhost:8080/healthz   # → ok
+```
+
+- 기본 포트: `8080` (`PORT` 로 변경)
+- 서비스 경로: 기본 `/`. 하위 경로로 서비스하려면 `BASE_PATH=/wedding-invitation/` 처럼 지정
+- `VITE_STATIC_ONLY` 기본값은 `true`(방명록/참석 서버 미사용). 서버를 쓰려면 `false` 와 `VITE_SERVER_URL` 지정
+- 컨테이너에 `HEALTHCHECK`(`/healthz`)가 포함되어 있습니다.
+
+### Docker 단독 실행
+
+```bash
+docker build -t wedding-invitation \
+  --build-arg VITE_NAVER_MAP_CLIENT_ID=... \
+  --build-arg VITE_KAKAO_SDK_JS_KEY=... .
+docker run -d -p 8080:80 --name wedding wedding-invitation
+```
+
+### Docker 없이 실행
+
+```bash
+PORT=8080 ./serve.sh            # npm ci → 빌드 → vite preview 로 서빙
+```
+
+> 키가 없어도 앱은 정상 기동되며, 지도는 "Map is not available", 카카오 공유는 비활성 상태로 표시됩니다.
+
 ## 📋 업데이트 내역
 
 ### 2025.09.11 - v0.1.0
